@@ -20,13 +20,17 @@ class BCFHyperParams(HyperParams):
     mom2_update_weight: int
     context_template_length_params: List[List[int]]
 
-    # Module templates
+    # Module templates for MLP layers
     rewrite_module_tmp: str
     layer_module_tmp: str
     mlp_module_tmp: str
     attn_module_tmp: str
     ln_f_module: str
     lm_head_module: str
+
+    # Module templates for cross-attention layers
+    cross_attention_layers: List[int]
+    cross_attention_module_tmp: str
 
     # Statistics
     mom2_dataset: str

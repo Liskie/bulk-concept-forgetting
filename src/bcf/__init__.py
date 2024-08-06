@@ -1,1 +1,1 @@
-from .bcf_main import BCFHyperParams, apply_bcf_to_model, execute_bcf
+from .bcf_main import BCFHyperParams, apply_bcf_to_model, execute_bcf_for_mlp, execute_bcf_for_cross_attention

@@ -4,19 +4,20 @@ import random
 
 import numpy as np
 import pandas as pd
-
 import torch
-
+from torchsummary import summary
 from diffusers import StableDiffusionPipeline
 from transformers import CLIPProcessor, CLIPModel
 import warnings
-
-warnings.filterwarnings("ignore")
+from rich.traceback import install
 
 from src.experiments.py.demo import demo_model_editing
 from src.bcf import BCFHyperParams
 from src.util.globals import *
 from src.bcf.bcf_main import get_context_templates
+
+warnings.filterwarnings("ignore")
+install()
 
 
 def parse_args():
@@ -32,6 +33,8 @@ def parse_args():
     parser.add_argument('--model', default='CompVis/stable-diffusion-v1-4')
     parser.add_argument('--clip_model', default='openai/clip-vit-large-patch14')
     parser.add_argument('--v_similarity_metric', default='l2', choices=["l2", "cosine"])
+    parser.add_argument('--edit_layers', type=str, default='all', choices=['mlp', 'cross_attention', 'all'],
+                        help='Specify which layers to edit: MLP, cross-attention, or both')
 
     return parser.parse_args()
 
@@ -77,6 +80,27 @@ def generate_with_seed(sd_pipeline, prompts, seed, output_path="./", image_param
     return outputs
 
 
+def summarize_pipeline_models(pipeline):
+    # Print the entire pipeline structure
+    print(pipeline)
+
+    # Print the components
+    print("\nPipeline Components:")
+    for name, module in pipeline.named_children():
+        print(f"Component: {name}")
+        print(module)
+
+    # Print detailed layers of each component
+    print("\nDetailed Layers:")
+    for name, module in pipeline.named_modules():
+        print(f"Layer: {name}")
+        print(module)
+
+    # Display summary of the model (assuming 'unet' is the main model component)
+    print("\nModel Summary:")
+    summary(pipeline.unet, input_size=(4, 64, 64))  # Adjust the input size accordingly
+
+
 def main():
     args = parse_args()
     print(args)
@@ -91,6 +115,9 @@ def main():
     sd_pipeline = StableDiffusionPipeline.from_pretrained(sd_model_name, safety_checker=None)
     # we disable the safety checker for test
     sd_pipeline = sd_pipeline.to(device)
+
+    summarize_pipeline_models(sd_pipeline)
+    return
 
     valid_set = pd.read_csv(args.file)
 
@@ -147,7 +174,7 @@ def main():
         print(hparams)
 
         model_new, _ = demo_model_editing(model, processor, requests, concept_type=args.concept_type, alg_name="bcf",
-                                          hparams=hparams)
+                                          hparams=hparams, edit_layers=args.edit_layers)
 
         model.to('cpu')
         del model
